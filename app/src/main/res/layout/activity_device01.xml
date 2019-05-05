@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              android:paddingBottom="10dp"
+              android:paddingLeft="10dp"
+              android:paddingRight="10dp"
+              android:paddingTop="10dp"
+              android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tvDeviceName"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        android:paddingLeft="10dip"
+        android:paddingRight="10dip"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingBottom="10dp"
+        tools:text="Device Name"/>
+
+    <TextView
+        android:id="@+id/tvBdAddr"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        android:paddingLeft="10dip"
+        android:paddingRight="10dip"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingBottom="10dp"
+        tools:text="88:88:88:88:88:88"/>
+
+    <ImageView
+        android:id="@+id/imgstatusdisconnected"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:visibility="visible"
+        android:layout_gravity="center"
+        android:contentDescription="Status Disconnected"
+        android:src="@drawable/red_led"
+        />
+
+    <ImageView
+        android:id="@+id/imgstatusconnected"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:visibility="gone"
+        android:layout_gravity="center"
+        android:contentDescription="Status Connected"
+        android:src="@drawable/green_led"
+        />
+
+    <Button
+        android:id="@+id/btnConnect"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        tools:text="Connect"/>
+
+    <ListView
+        android:id="@+id/lvEvents"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:scrollbars="vertical"
+        android:paddingLeft="20dip"
+        android:paddingRight="20dip"
+        android:layout_weight="1"
+        android:divider="@drawable/list_divider"
+        android:focusable="true"
+        android:horizontalSpacing="3dp"
+        android:scrollingCache="true"
+        android:smoothScrollbar="true"
+        android:verticalSpacing="3dp"
+        />
+
+</LinearLayout>

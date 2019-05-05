@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">BtLe</string>
+    <string name="action_settings">Settings</string>
+    <string name="screen_title_main">Device List</string>
+    <string name="btnConnect_connectText">Connect</string>
+    <string name="btnConnect_disconnectText">Disconnect</string>
+    <string name="imgstatusconnected_description">Status</string>
+    <string name="imgstatusdisconnected_description">Status</string>
+</resources>

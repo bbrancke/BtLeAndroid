@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/list_row"
+              android:layout_width="fill_parent"
+              android:layout_height="40dp"
+              android:layout_margin="5dp"
+              android:layout_marginBottom="5dp"
+              android:layout_gravity="center"
+              android:background="@drawable/row_background"
+    >
+
+    <TextView
+        android:id="@+id/tvId"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:padding="2dp"
+        android:layout_weight="0.3"
+        android:layout_marginLeft="4dp"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:visibility="gone"
+        />
+
+    <TextView
+        android:id="@+id/tvEvent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:padding="2dp"
+        android:layout_width="0dp"
+        android:layout_weight="0.2"
+        android:layout_marginRight="5dp"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        />
+
+</LinearLayout>
