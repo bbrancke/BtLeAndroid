@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Environment;
 import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
@@ -21,6 +22,13 @@ import com.nerdlinger.btle.R;
 import com.nerdlinger.btle.bluetooth.BleAdapterService;
 
 import java.lang.ref.WeakReference;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -46,6 +54,8 @@ public class DeviceEventActivity01 extends Activity {
 	private ImageView m_imgDisconnected;
 	private ListView m_listView;
 	private DeviceEventListViewAdapter m_eventListAdapter;
+
+	private Date m_startTime = new Date();
 
 	private int m_nextEventNumber;
 	private String m_events;
@@ -98,10 +108,10 @@ public class DeviceEventActivity01 extends Activity {
 			}
 		});
 		 */
-		for (int i = 1; i <= 10; i++)
+		for (int i = 11; i <= 30; i++)
 		{
 			String id = String.format("%d", i);
-			String event = "Event # " + id;
+			String event = "Event # " + id + " 88888888-88888888-00000000-88888888 [Device Characteristic Name Here]";
 			AddEvent(event);
 		}
 
@@ -118,6 +128,7 @@ public class DeviceEventActivity01 extends Activity {
 				m_connected = !m_connected;
 				if (m_connected) {
 					AddEvent("Connecting...");
+					m_startTime = new Date();
 
 					m_btnConnect.setText(R.string.btnConnect_disconnectText);
 					m_imgConnected.setVisibility(View.VISIBLE);
@@ -133,11 +144,52 @@ public class DeviceEventActivity01 extends Activity {
 					m_btnConnect.setText(R.string.btnConnect_connectText);
 					m_imgConnected.setVisibility(View.GONE);
 					m_imgDisconnected.setVisibility(View.VISIBLE);
+					WriteEventsToSdCard();
 				}
 
 			}
 		});
 	}
+
+	private void WriteEventsToSdCard() {
+		File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/btgludata/");
+		if (!dir.exists()) {
+			try {
+				Files.createDirectories(dir.toPath());
+			}
+			catch (Exception ex) {
+				String reason = ex.getMessage();
+				AddEvent("CAN'T CREATE SD CARD FOLDER:");
+				AddEvent(dir.toString());
+				AddEvent(reason);
+				return;
+			}
+
+		}
+		File file = new File(dir, "BtEvents.txt");
+		try(FileWriter fw = new FileWriter(file, true);
+		    BufferedWriter bw = new BufferedWriter(fw);
+		    PrintWriter out = new PrintWriter(bw))
+		{
+			DateFormat fmt = new SimpleDateFormat("MM/dd/yy HH:mm:ss.SSS");
+			String started = "Session Start: " + fmt.format(m_startTime);
+			String line;
+			line = "=============================";
+			out.println(line);
+			out.println(started);
+			for (OneDeviceEvent ode : m_list) {
+				out.println(ode.getEvent());
+			}
+			//more code
+		} catch (IOException ex) {
+			//exception handling left as an exercise for the reader
+			String reason = ex.getMessage();
+			AddEvent("CAN'T WRITE TO FILE:");
+			AddEvent(reason);
+		}
+	}
+
+
 
 	private void log(String msg) {
 		Log.e(Constants.TAG, "DeviceEventActivity01: " + msg);

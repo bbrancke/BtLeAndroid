@@ -46,9 +46,13 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 	private BleScanner m_bleScanner;
 	private static final long SCAN_TIMEOUT = 30000;  // 5000;
 	private static final int REQUEST_LOCATION = 0;
-	private static String[] PERMISSIONS_LOCATION = {Manifest.permission.ACCESS_COARSE_LOCATION};
-	private boolean m_permissionsGranted =false;
-	private int mdeviceCount =0;
+	//private static String[] PERMISSIONS_LOCATION = {Manifest.permission.ACCESS_COARSE_LOCATION};
+	private boolean m_permissionsLocationGranted = false;
+
+	private static final int REQUEST_STORAGE_WRITE = 1;
+	private boolean m_permissionsStorageGranted = false;
+
+	private int mdeviceCount = 0;
 	private Toast toast;
 
 	private List<OneBtDevice> m_devices = new ArrayList<>();
@@ -89,6 +93,9 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 					setScanState(false);
 					m_bleScanner.stopScanning();
 				}
+				if (!m_permissionsStorageGranted) {
+					return;
+				}
 				OneBtDevice device = m_devices.get(position);
 // Proves that we are getting the correct device (yes, we are):
 //				Toast.makeText(getApplicationContext(),
@@ -115,51 +122,40 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 		}));
 		setButtonText();
 		m_bleScanner = new BleScanner(this.getApplicationContext());
+		VerifyStoragePermissions();
 	}  // onCreate()
 
 	private void StopScan() {
 		setScanState(false);
 	}
-	/**** This is AFU! ***
-		listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-			                        int position, long id) {
-				if (m_bleNowScanning) {
-					setScanState(false);
-					super.onCreate(savedInstanceState);
-					setContentView(R.layout.activity_main);
-					setButtonText();
-					ble_device_list_adapter = new ListAdapter();
-					ListView listView = findViewById(R.id.deviceList);
-					listView.setAdapter(ble_device_list_adapter);
-					m_bleScanner = new BleScanner(getApplicationContext());
-					listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-						@Override
-						public void onItemClick(AdapterView<?> parent, View view,
-						                        int position, long id) {
-							if (m_bleNowScanning) {
-								setScanState(false);
-								30
-								m_bleScanner.stopScanning();
-							}
-							BluetoothDevice device = ble_device_list_adapter.getDevice(position);
-							if (toast != null) {
-								toast.cancel();
-							}
-							Intent intent = new Intent(MainActivity.this,
-									PeripheralControlActivity.class);
-							intent.putExtra(PeripheralControlActivity.EXTRA_NAME, device.getName());
-							intent.putExtra(PeripheralControlActivity.EXTRA_ID, device.getAddress());
-							startActivity(intent);
-						}
-					});
-				}
-			}
 
+	private boolean VerifyStoragePermissions() {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+			m_permissionsStorageGranted = true;
+			return true;
 		}
+		// Marshmallow and above: App must request permissions
+		// at runtime (AND in the manifest.xml).
+		// Else User can go Settings->Apps->(this app)->Permissions
+		m_permissionsStorageGranted =
+				checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+						==
+						PackageManager.PERMISSION_GRANTED;
+		if (!m_permissionsStorageGranted) {
+			// .shouldShowRequestPermissionRationale() ? - Alert dlg: Reasons...
+			// We get (locally defined constant) REQUEST_STORAGE_WRITE
+			// in the "onRequestPermissionsResult()" method below.
+			ActivityCompat.requestPermissions(MainActivity.this,
+					new String[] { Manifest.permission.WRITE_EXTERNAL_STORAGE},
+					REQUEST_STORAGE_WRITE);
+			// I am not sure if requestPermissions() causes this to block
+			// until User accepts or rejects, then onReqestPermission callback
+			// is complete or if we return right here...
+			// We check m_permissionsStorage on moving to the next Device Event List Activity
+		}
+		return m_permissionsStorageGranted;
 	}
-	 ****/
+
 
 	private void requestLocationPermission() {
 		Log.e(Constants.TAG, "Requesting Location permission...");
@@ -188,14 +184,27 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 	@Override
 	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
 	                                       @NonNull int[] grantResults) {
+		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+		if (requestCode == REQUEST_STORAGE_WRITE) {
+			for (int i : grantResults) {
+				if (i == PackageManager.PERMISSION_GRANTED) {
+					// This is retarded, should just have a single call()
+					// that checks version >= .M and then OS call checkSelfPerms()
+					// instead of these bools...
+					m_permissionsStorageGranted = true;
+				}
+			}
+			return;
+		}
+
 		if (requestCode != REQUEST_LOCATION) {
-			super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
 			return;
 		}
 		// (else...)
 		if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 			Log.e(Constants.TAG, "Permissions CB: Location permission has now been granted. Scanning.....");
-			m_permissionsGranted = true;
+			m_permissionsLocationGranted = true;
 			if (!m_bleScanner.isScanning()) {  // NOTE: WAS: "if (ble_scanner.isScanning()) { start.. } "
 				startScanning();
 			}
@@ -204,6 +213,7 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 		Log.e(Constants.TAG, "Permissions CB: Location position NOT granted!");
 
 	}
+
 
 	public void onScan(View view) {
 		if (m_bleScanner.isScanning()) {
@@ -218,24 +228,24 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 			// Else User can go Settings->Apps->(this app)->Permissions
 			if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
 					!= PackageManager.PERMISSION_GRANTED) {
-				m_permissionsGranted = false;
+				m_permissionsLocationGranted = false;
 				requestLocationPermission();
 			}
 			else {
 				Log.e(Constants.TAG, "Location permission already granted, starting scan...");
-				m_permissionsGranted = true;
+				m_permissionsLocationGranted = true;
 			}
 		}
 		else {
 			// Older than 'M', didn't require run-time permission check.
-			m_permissionsGranted = true;
+			m_permissionsLocationGranted = true;
 		}
 
 		startScanning();
 	}
 
 	private void startScanning() {
-		if (!m_permissionsGranted)
+		if (!m_permissionsLocationGranted)
 		{
 			Log.e(Constants.TAG, "startScanning(): Permission not granted.");
 			return;

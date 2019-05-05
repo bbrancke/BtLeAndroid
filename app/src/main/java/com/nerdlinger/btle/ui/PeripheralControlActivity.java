@@ -21,6 +21,7 @@ import com.nerdlinger.btle.Constants;
 import com.nerdlinger.btle.R;
 import com.nerdlinger.btle.bluetooth.BleAdapterService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 
@@ -39,6 +40,8 @@ public class PeripheralControlActivity extends Activity {
 	private boolean share_with_server = false;
 	private Switch share_switch;
 	private Button m_connectButton;
+
+	private List<String> m_deviceServices = new ArrayList<>();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -169,20 +172,15 @@ public class PeripheralControlActivity extends Activity {
 
 				case BleAdapterService.GATT_SERVICES_DISCOVERED:
 					// validate services and if ok....
-/*					List<BluetoothGattService> slist = bluetooth_le_adapter.getSupportedGattServices();
-					boolean link_loss_present=false;
-					boolean immediate_alert_present=false;
-					boolean tx_power_present=false;
-					boolean proximity_monitoring_present=false;
-					boolean health_thermometer_present = false;
-					for (BluetoothGattService svc : slist) {
-						log("UUID=" + svc.getUuid().toString().toUpperCase() + " INSTANCE=" + svc.getInstanceId());
-						//if (svc.getUuid().toString().equalsIgnoreCase(BleAdapterService.LINK_LOSS_SERVICE_UUID)) {
-						//	link_loss_present = true;
-						//	continue;
-						//}  .. and more tests ...
+					if (bluetooth_le_adapter.GetDeviceServices(m_deviceServices)) {
+						for (String s : m_deviceServices) {
+							log("Service: UUID=[" + s + "]");
+						}
 					}
-					*/
+					else {
+						log("Can't get Device Services");
+					}
+
 					break;
 			}
 		}
