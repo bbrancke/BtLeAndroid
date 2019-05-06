@@ -42,6 +42,7 @@ public class UuidLookup {
         m_lookups.put(MakeFullUuid("1814"), "Running Speed and Cadence");
         m_lookups.put(MakeFullUuid("1816"), "Cycling Speed and Cadence");
         m_lookups.put(MakeFullUuid("ffe0"), "Simple Key Service");
+        m_lookups.put(MakeFullUuid("fff0"), "Soft Serial Service");
 
         // Characteristics:
         //   https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicsHome.aspx
@@ -49,6 +50,8 @@ public class UuidLookup {
         m_lookups.put(MakeFullUuid("2a34"), "Glucose Measurement Context");
         m_lookups.put(MakeFullUuid("2a37"), "Heart Rate Measurement");
         m_lookups.put(MakeFullUuid("2a29"), "Manufacturer Name String");
+        m_lookups.put(MakeFullUuid("2a51"), "Glucose Feature");
+        m_lookups.put(MakeFullUuid("2a52"), "Record Access Control Point");
         m_lookups.put(MakeFullUuid("2902"), "Client Characteristic Config");
 /*
 TODO: Finish this off for other BT LE devices
@@ -165,5 +168,24 @@ AlertCategoryID = 0x2A43,
         }
         // else..
         return "(unknown)";
+    }
+
+    public String GetNameWithShortUuid(String uuid) {
+        String val = uuid.toLowerCase();
+        String name = m_lookups.get(val);
+        if (name == null) {
+            return "(unknown): " + uuid;
+        }
+        // (else...)
+        // 01234567
+        // 00001234-0000-1000-8000-00805F9B34FB
+        String shortUuid;
+        if (val.length() > 6) {
+            shortUuid = " (0x" + val.substring(4, 7) + ")";
+        }
+        else {
+            shortUuid = " (0x" + val + ")";
+        }
+        return name + shortUuid;
     }
 }
