@@ -4,7 +4,22 @@ import java.util.HashMap;
 
 public class UuidLookup {
     private HashMap<String, String> m_lookups = new HashMap<>();
-    public String GlucoseServiceId = MakeFullUuid("1808");
+
+    public final String SvcId_GlucoseService = MakeFullUuid("1808");
+
+    // These are characteristics of the Glucose Service:
+    // "ChrId": Characteristic ID
+    // GlugoseMeasurement, GlugoseMeasurementContext, GlucoseFeature and RACP are all
+    //   "Glucose Service" characteristics; I haven't investigated the
+    //   other service's characteristics yet...
+    public final String ChrId_GlucoseMeasurement = MakeFullUuid("2a18");  // "Glucose Measurement"
+    public final String ChrId_GlucoseMeasurementContext = MakeFullUuid("2a34");  // "Glucose Measurement Context");
+    public final String ChrId_GlucoseFeature = MakeFullUuid("2a51");
+    public final String ChrId_RecordAccessControlPoint = MakeFullUuid("2a52");
+
+    // Descriptor attached to ("behind") 2a18, 2a34, 2a52:
+    // "DscId": Descriptor ID
+    public final String DscId_ClientConfigurationConfig = MakeFullUuid("2902");
 
     private String MakeFullUuid(String shortValue) {
         String val = "0000" + shortValue + "-0000-1000-8000-00805f9b34fb";
@@ -29,7 +44,7 @@ public class UuidLookup {
         m_lookups.put(MakeFullUuid("1805"), "Current Time Service");
         m_lookups.put(MakeFullUuid("1806"), "Reference Time Update Service");
         m_lookups.put(MakeFullUuid("1807"), "Next DST Change");
-        m_lookups.put(GlucoseServiceId /* "1808" */, "Glucose Service");
+        m_lookups.put(SvcId_GlucoseService /* "1808" */, "Glucose Service");
         m_lookups.put(MakeFullUuid("1809"), "Health Thermometer");
         m_lookups.put(MakeFullUuid("180d"), "Heart Rate Service");
         m_lookups.put(MakeFullUuid("180e"), "Phone Alert Status");
@@ -46,17 +61,18 @@ public class UuidLookup {
 
         // Characteristics:
         //   https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicsHome.aspx
-        m_lookups.put(MakeFullUuid("2a18"), "Glucose Measurement");
-        m_lookups.put(MakeFullUuid("2a34"), "Glucose Measurement Context");
+        m_lookups.put(ChrId_GlucoseMeasurement /* 2a18 */, "Glucose Measurement");
+        m_lookups.put(ChrId_GlucoseMeasurementContext /* 2a34 */, "Glucose Measurement Context");
         m_lookups.put(MakeFullUuid("2a37"), "Heart Rate Measurement");
         m_lookups.put(MakeFullUuid("2a29"), "Manufacturer Name String");
-        m_lookups.put(MakeFullUuid("2a51"), "Glucose Feature");
-        m_lookups.put(MakeFullUuid("2a52"), "Record Access Control Point");
-        m_lookups.put(MakeFullUuid("2902"), "Client Characteristic Config");
+        m_lookups.put(ChrId_GlucoseFeature /* 2a51 */, "Glucose Feature");
+        m_lookups.put(ChrId_RecordAccessControlPoint /* 2a52 */, "Record Access Control Point");
+
+        m_lookups.put(DscId_ClientConfigurationConfig /* 2902 */, "Client Characteristic Config");
 /*
 TODO: Finish this off for other BT LE devices
 Time consuming, for now only entering what I think will need...
-AlertCategoryID = 0x2A43,
+        AlertCategoryID = 0x2A43,
         AlertCategoryIDBitMask = 0x2A42,
         AlertLevel = 0x2A06,
         AlertNotificationControlPoint = 0x2A44,
@@ -180,8 +196,8 @@ AlertCategoryID = 0x2A43,
         // 01234567
         // 00001234-0000-1000-8000-00805F9B34FB
         String shortUuid;
-        if (val.length() > 6) {
-            shortUuid = " (0x" + val.substring(4, 7) + ")";
+        if (val.length() > 7) {
+            shortUuid = " (0x" + val.substring(4, 8) + ")";
         }
         else {
             shortUuid = " (0x" + val + ")";

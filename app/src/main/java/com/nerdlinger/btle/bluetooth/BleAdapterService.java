@@ -38,9 +38,12 @@ import android.os.Message;
 import android.util.Log;
 
 import com.nerdlinger.btle.Constants;
+import com.nerdlinger.btle.ui.UuidLookup;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class BleAdapterService extends Service {
 
@@ -50,9 +53,9 @@ public class BleAdapterService extends Service {
 	private Handler activity_handler = null;
 	private BluetoothDevice device;
 	private BluetoothGattDescriptor descriptor;
-	private List<BluetoothGattService> m_deviceServices;
-	private List<BluetoothGattCharacteristic> m_serviceCharacteristics;
-	private List<BluetoothGattDescriptor> m_characteristicsDescriptors;
+//	private List<BluetoothGattService> m_deviceServices;
+//	private List<BluetoothGattCharacteristic> m_serviceCharacteristics;
+//	private List<BluetoothGattDescriptor> m_characteristicsDescriptors;
 	private boolean connected = false;
 	public boolean alarm_playing = false;
 
@@ -64,15 +67,23 @@ public class BleAdapterService extends Service {
 	public static final int GATT_CHARACTERISTIC_WRITTEN = 5;
 	public static final int GATT_REMOTE_RSSI = 6;
 	public static final int MESSAGE = 7;
-	public static final int NOTIFICATION_OR_INDICATION_RECEIVED = 8;
-	// message parms
+	public static final int GATT_NOTIFICATION_OR_INDICATION_RECEIVED = 8;
+	public static final int GATT_DESCRIPTOR_READ = 9;
+	public static final int GATT_DESCRIPTOR_WRITTEN = 10;
+	// message params
 	public static final String PARCEL_DESCRIPTOR_UUID = "DESCRIPTOR_UUID";
 	public static final String PARCEL_CHARACTERISTIC_UUID = "CHARACTERISTIC_UUID";
 	public static final String PARCEL_SERVICE_UUID = "SERVICE_UUID";
 	public static final String PARCEL_VALUE = "VALUE";
 	public static final String PARCEL_RSSI = "RSSI";
-	public static final String PARCEL_TEXT = "TEXT";
-	public static final String PARCEL_STATUS = "STATUS";
+	public static final String BundleText = "TEXT";
+	public static final String BundleStatus  = "STATUS";
+	public static final String BundleUuid = "UUID";
+	public static final String BundleHadAnError = "HAD_AN_ERROR";
+	public static final String BundleLastError = "LAST_ERROR";
+	public static final String BundleRawValue = "RAW_DATA";
+	public static final String BundleRawValueLength = "RAW_DATA_LENGTH";
+	public static final String BundleCharacteristicId = "CHARACTERISTIC_UUID";
 
 	public static String IMMEDIATE_ALERT_SERVICE_UUID = "00001802-0000-1000-8000-00805F9B34FB";
 	public static String LINK_LOSS_SERVICE_UUID = "00001803-0000-1000-8000-00805F9B34FB";
@@ -85,15 +96,19 @@ public class BleAdapterService extends Service {
 	public static String TEMPERATURE_MEASUREMENT_CHARACTERISTIC = "00002A1C-0000-1000-8000-00805F9B34FB";
 	public static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
 
-	// Activity calls this to register to receive my messages:
-	public void setActivityHandler(Handler handler) {
+	private UuidLookup m_uuidLookup;
+	public String LastError = "";
+
+	// Activity calls this to register to receive my messages and sets UuidLookup:
+	public void SetHandlerAndUuidLookup(Handler handler, UuidLookup uuidLookup) {
 		activity_handler = handler;
+		m_uuidLookup = uuidLookup;
 	}
 
 	private void sendConsoleMessage(String text) {
 		Message msg = Message.obtain(activity_handler, MESSAGE);
 		Bundle data = new Bundle();
-		data.putString(PARCEL_TEXT, text);
+		data.putString(BundleText, text);
 		msg.setData(data);
 		msg.sendToTarget();
 	}
@@ -150,58 +165,243 @@ public class BleAdapterService extends Service {
 		bluetooth_gatt.discoverServices();
 	}
 
+	private boolean FillBundleFromDescriptor(Bundle bundle, BluetoothGattDescriptor dsc) {
+		BluetoothGattCharacteristic chr;
+		bundle.putBoolean(BundleHadAnError, false);
+		UUID uuid = dsc.getUuid();
+		String sId = uuid.toString().toLowerCase();
+		bundle.putString(BundleUuid, sId);
+
+		chr = dsc.getCharacteristic();
+		uuid = chr.getUuid();
+		sId = uuid.toString().toLowerCase();
+		bundle.putString(BundleCharacteristicId, sId);
+
+		byte[] b = dsc.getValue();
+		int length = b.length;
+		bundle.putInt(BundleRawValueLength, length);
+		if (length > 0) {
+			bundle.putByteArray(BundleRawValue, b);
+		}
+
+		return true;
+	}
+
+	private boolean FillBundleFromCharacteristic(Bundle bundle, BluetoothGattCharacteristic chr) {
+		// chr has methods such as:
+		//      public String getStringValue (int offset)
+		// but have to known the offset.
+		// TODO: Get Characteristic and Descriptor definitions, add here.
+		bundle.putBoolean(BundleHadAnError, false);
+		UUID uuid = chr.getUuid();
+		String sId = uuid.toString().toLowerCase();
+		bundle.putString(BundleUuid, sId);
+
+		byte[] b = chr.getValue();
+		int length = b.length;
+		bundle.putInt(BundleRawValueLength, length);
+		if (length > 0) {
+			bundle.putByteArray(BundleRawValue, b);
+		}
+		// TODO: Parse the Characteristic by type, fill in values ==> bundle.
+		// FOR NOW, just show the raw data... Maybe the UI should parse this raw data...
+		if (sId.equalsIgnoreCase(m_uuidLookup.ChrId_GlucoseMeasurement)) {
+			// I think we will use something like:
+			//     return FillBundleFromGlugoseMeasurement(bundle, chr);
+			// here...
+			return true;
+		}
+		// (else)...
+		if (sId.equalsIgnoreCase(m_uuidLookup.ChrId_GlucoseMeasurementContext)) {
+			return true;
+		}
+		// (else)...
+		if (sId.equalsIgnoreCase(m_uuidLookup.ChrId_GlucoseFeature)) {
+			return true;
+		}
+		// (else)...
+		if (sId.equalsIgnoreCase(m_uuidLookup.ChrId_RecordAccessControlPoint)) {
+			return true;
+		}
+		// else...
+		// unrecognized characteristic
+		bundle.putBoolean(BundleHadAnError, true);
+		bundle.putString(BundleLastError, "Unrecognized Characteristic (might be optional)");
+		return false;
+	}
+
 	public boolean GetDeviceServices(List<String> list) {
+		List<BluetoothGattService> deviceServices;
 		list.clear();
 		if (bluetooth_gatt == null) {
 			return false;
 		}
-		m_deviceServices = bluetooth_gatt.getServices();
-		for (BluetoothGattService svc : m_deviceServices) {
+		deviceServices = bluetooth_gatt.getServices();
+		for (BluetoothGattService svc : deviceServices) {
 			list.add(svc.getUuid().toString().toLowerCase());
 		}
 		return true;
 	}
+// List<BluetoothGattCharacteristic> m_serviceCharacteristics;
+//	private List<BluetoothGattDescriptor> m_characteristicsDescriptors;
+//	private List<BluetoothGattService> m_deviceServices;
+	private BluetoothGattService getServiceByUuid(String svc_uuid) {
+		UUID uuid;
 
-	private BluetoothGattService getServiceByUuid(String uuid) {
-		for (BluetoothGattService svc : m_deviceServices) {
-			if (uuid.equals(svc.getUuid().toString())) {
-				return svc;
-			}
-		}
-		return null;
+		uuid = UUID.fromString(svc_uuid);
+		return bluetooth_gatt.getService(uuid);
 	}
 
 	public boolean GetServicesCharacteristics(String uuid, List<String> list) {
 		BluetoothGattService svc;
+		List<BluetoothGattCharacteristic> svc_characteristics;
+
 		list.clear();
 		svc = getServiceByUuid(uuid);
 		if (svc == null) {
 			return false;
 		}
-		m_serviceCharacteristics = svc.getCharacteristics();
-		for (BluetoothGattCharacteristic chr : m_serviceCharacteristics) {
+		svc_characteristics = svc.getCharacteristics();
+		for (BluetoothGattCharacteristic chr : svc_characteristics) {
 			list.add(chr.getUuid().toString().toLowerCase());
 		}
 		return true;
 	}
 
-	private BluetoothGattCharacteristic getCharacteristicByUuid(String uuid) {
-		for (BluetoothGattCharacteristic chr : m_serviceCharacteristics) {
-			if (uuid.equals(chr.getUuid().toString())) {
-				return chr;
-			}
+	public boolean GetCharacteristicsDescriptors(String svc_uuid, String chr_uuid, List<String> list) {
+		BluetoothGattService svc;
+		BluetoothGattCharacteristic chr;
+		List<BluetoothGattDescriptor> descs;
+		UUID uuid;
+
+		list.clear();
+		svc = getServiceByUuid(svc_uuid);
+		if (svc == null) {
+			return false;
 		}
-		return null;
+
+		uuid = UUID.fromString(chr_uuid);
+		chr = svc.getCharacteristic(uuid);
+		if (chr == null) {
+			return false;
+		}
+
+		descs = chr.getDescriptors();
+		for (BluetoothGattDescriptor desc : descs) {
+			list.add(desc.getUuid().toString().toLowerCase());
+		}
+		return true;
 	}
 
-	public List<BluetoothGattDescriptor> getCharacteristicsDescriptors(String uuid) {
+	private void AppendLastError(String msg) {
+		if (LastError.length() > 0) {
+			LastError += "\r\n";
+		}
+		LastError += msg;
+	}
+
+	private BluetoothGattService GetService(String svc_name) {
+		UUID uuid;
+		BluetoothGattService svc;
+
+		uuid = UUID.fromString(svc_name);
+		svc = bluetooth_gatt.getService(uuid);
+		if (svc == null) {
+			AppendLastError("Can't get Service ID: " + svc_name);
+		}
+		return svc;
+	}
+
+	private BluetoothGattCharacteristic GetCharacteristic(String svc_name, String chr_name) {
+		BluetoothGattService svc;
 		BluetoothGattCharacteristic chr;
-		chr = getCharacteristicByUuid(uuid);
-		if (chr == null) {
+		UUID uuid;
+		svc = GetService(svc_name);
+		if (svc == null) {
 			return null;
 		}
-		m_characteristicsDescriptors = chr.getDescriptors();
-		return m_characteristicsDescriptors;
+		uuid = UUID.fromString(chr_name);
+		chr = svc.getCharacteristic(uuid);
+		if (chr == null) {
+			AppendLastError("Can't get characteristic: " + chr_name + ", continuing...");
+		}
+		return chr;
+	}
+
+	private BluetoothGattDescriptor GetDescriptor(String svc_name, String chr_name, String dsc_name) {
+		BluetoothGattCharacteristic chr;
+		BluetoothGattDescriptor dsc;
+		UUID uuid;
+
+		chr = GetCharacteristic(svc_name, chr_name);
+		if (chr == null ) {
+			return null;
+		}
+
+		uuid = UUID.fromString(dsc_name);
+		dsc = chr.getDescriptor(uuid);
+		if (dsc == null) {
+			AppendLastError("Can't get descriptor: " + dsc_name);
+		}
+		return dsc;
+	}
+
+	public boolean ReadDescriptor(String svc_name, String chr_name, String dsc_name) {
+		BluetoothGattDescriptor dsc;
+
+		LastError = "";
+		dsc = GetDescriptor(svc_name, chr_name, dsc_name);
+		if (dsc == null) {
+			return false;
+		}
+		if (!bluetooth_gatt.readDescriptor(dsc)) {
+			AppendLastError("Read Descriptor failed.");
+			return false;
+		}
+		// Now caller should wait for GATT_DESCRIPTOR_READ
+		return true;
+	}
+
+	public boolean SetDescriptorNotifications(String svc_name, String chr_name, String dsc_name) {
+		BluetoothGattDescriptor dsc;
+
+		LastError = "";
+		dsc = GetDescriptor(svc_name, chr_name, dsc_name);
+		if (dsc == null) {
+			return false;
+		}
+		dsc.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+		dsc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+		if (!bluetooth_gatt.writeDescriptor(dsc)) {
+			AppendLastError("Write Descriptor failed.");
+			return false;
+		}
+		// Now caller should wait for GATT_DESCRIPTOR_WRITTEN
+		return true;
+	}
+
+	public boolean EnableCharacteristicNotifications(String svc_name, List<String> chr_names) {
+		BluetoothGattCharacteristic chr;
+		boolean enabled;
+		boolean rv;
+
+		LastError = "";
+
+		enabled = true;
+		rv = true;
+		for (String chr_name : chr_names) {
+			chr = GetCharacteristic(svc_name, chr_name);
+			if (chr == null) {
+				rv = false;
+			}
+			else {
+				if (!bluetooth_gatt.setCharacteristicNotification(chr, enabled)) {
+					AppendLastError("Can't enable Notifications for: " + chr_name + ", continuing...");
+					rv = false;
+				}
+			}
+		}
+		return rv;
 	}
 
 	private void log(String msg)
@@ -223,7 +423,7 @@ public class BleAdapterService extends Service {
 		                                    int newState) {
 			log("onConnectionStateChange: status=" + status);
 			Bundle bundle = new Bundle();
-			bundle.putInt(PARCEL_STATUS, status);
+			bundle.putInt(BundleStatus, status);
 			if (newState == BluetoothProfile.STATE_CONNECTED) {
 				log("onConnectionStateChange: CONNECTED");
 				connected = true;
@@ -245,6 +445,64 @@ public class BleAdapterService extends Service {
 					bluetooth_gatt = null;
 				}
 			}
+		}
+
+		@Override
+		public void onCharacteristicRead(BluetoothGatt gatt,
+		                                 BluetoothGattCharacteristic characteristic,
+		                                 int status) {
+			Message msg = Message.obtain(activity_handler, GATT_CHARACTERISTIC_READ);
+			Bundle bundle = new Bundle();
+			bundle.putInt(BundleStatus, status);
+			FillBundleFromCharacteristic(bundle, characteristic);
+			msg.setData(bundle);
+			msg.sendToTarget();
+		}
+
+		@Override
+		public void onCharacteristicWrite(BluetoothGatt gatt,
+		                                  BluetoothGattCharacteristic characteristic, int status) {
+			Message msg = Message.obtain(activity_handler, GATT_CHARACTERISTIC_WRITTEN);
+			Bundle bundle = new Bundle();
+			bundle.putInt(BundleStatus, status);
+			FillBundleFromCharacteristic(bundle, characteristic);
+			msg.setData(bundle);
+			msg.sendToTarget();
+		};
+
+		@Override
+		public void onCharacteristicChanged(BluetoothGatt gatt,
+		                                    BluetoothGattCharacteristic characteristic) {
+			Message msg = Message.obtain(activity_handler, GATT_NOTIFICATION_OR_INDICATION_RECEIVED);
+			Bundle bundle = new Bundle();
+			FillBundleFromCharacteristic(bundle, characteristic);
+			msg.setData(bundle);
+			msg.sendToTarget();
+		}
+
+		@Override
+		public void onDescriptorRead (BluetoothGatt gatt,
+		                              BluetoothGattDescriptor descriptor,
+		                              int status) {
+			Message msg = Message.obtain(activity_handler, GATT_DESCRIPTOR_READ);
+			Bundle bundle = new Bundle();
+			bundle.putInt(BundleStatus, status);
+			FillBundleFromDescriptor(bundle, descriptor);
+			msg.setData(bundle);
+			msg.sendToTarget();
+		}
+
+		@Override
+		public void onDescriptorWrite (BluetoothGatt gatt,
+		                               BluetoothGattDescriptor descriptor,
+		                               int status) {
+			// if (status == BluetoothGatt.GATT_SUCCESS )  // == zero
+			Message msg = Message.obtain(activity_handler, GATT_DESCRIPTOR_WRITTEN);
+			Bundle bundle = new Bundle();
+			bundle.putInt(BundleStatus, status);
+			FillBundleFromDescriptor(bundle, descriptor);
+			msg.setData(bundle);
+			msg.sendToTarget();
 		}
 	};
 

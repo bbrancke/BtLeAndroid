@@ -1,7 +1,6 @@
 package com.nerdlinger.btle.ui;
 
 import android.app.Activity;
-import android.bluetooth.BluetoothGattService;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -24,7 +23,6 @@ import com.nerdlinger.btle.bluetooth.BleAdapterService;
 import java.lang.ref.WeakReference;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -34,6 +32,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import static com.nerdlinger.btle.bluetooth.BleAdapterService.BundleUuid;
+import static com.nerdlinger.btle.bluetooth.BleAdapterService.GATT_NOTIFICATION_OR_INDICATION_RECEIVED;
 
 public class DeviceEventActivity01 extends Activity {
 	public List<OneDeviceEvent> m_list = new ArrayList<>();
@@ -179,12 +180,12 @@ public class DeviceEventActivity01 extends Activity {
 			String started = "Session Start: " + fmt.format(m_startTime);
 			String line;
 			line = "=============================";
-			out.println(line);
-			out.println(started);
+			out.print(line + "\r\n");
+			out.print(started + "\r\n");
+
 			for (OneDeviceEvent ode : m_list) {
-				out.println(ode.getEvent());
+				out.print(ode.getEvent() + "\r\n");
 			}
-			//more code
 		} catch (IOException ex) {
 			//exception handling left as an exercise for the reader
 			String reason = ex.getMessage();
@@ -192,8 +193,6 @@ public class DeviceEventActivity01 extends Activity {
 			AddEvent(reason);
 		}
 	}
-
-
 
 	private void log(String msg) {
 		Log.e(Constants.TAG, "DeviceEventActivity01: " + msg);
@@ -211,18 +210,72 @@ public class DeviceEventActivity01 extends Activity {
 		m_events += event + "\n";
 	}
 
+	private String DataToHex(byte[] b, int length, String indent) {
+		String s;
+		s = indent + "Data Received, length = " + String.format("%d", length);
+		for (int i = 0; i < length; i++) {
+			if ((i % 8) == 0) {
+				s += "\r\n" + String.format("%04x", i) + "  ";
+			}
+			else if ((i % 4) == 0) {
+				s += " ";
+			}
+			// bytes and ints are SIGNED, fixup for 'megative' numbers...
+			int val = b[i];  // if b[i] is 0x81, then val is 0xffffff80!
+			val &= 0xff;
+			s += String.format("%02x", val) + " ";
+		}
+		s += "\r\n";
+		return s;
+	}
+
+	private boolean EnableGlucoseServiceCharacteristicNotifications() {
+		String svc_name;
+		List<String> chr_names;
+
+		svc_name = m_uuidlookup.SvcId_GlucoseService;
+		chr_names = new ArrayList<>();
+		//
+		//  16:36:13.349: Getting Glucose Service characteristics...
+		//     16:36:13.350: CHR: Glucose Measurement (0x2a18)
+		//     16:36:13.351: CHR: Glucose Measurement Context (0x2a34)
+		//     16:36:13.352: CHR: Glucose Feature (0x2a51)
+		//     16:36:13.353: CHR: Record Access Control Point (0x2a52)
+		chr_names.add(m_uuidlookup.ChrId_GlucoseMeasurement);
+		chr_names.add(m_uuidlookup.ChrId_GlucoseMeasurementContext);
+		chr_names.add(m_uuidlookup.ChrId_GlucoseFeature);
+		chr_names.add(m_uuidlookup.ChrId_RecordAccessControlPoint);
+
+		return m_bleAdapter.EnableCharacteristicNotifications(svc_name, chr_names);
+	}
+
+	private String statusToString(int gatt_status) {
+		String strStatus = "Status: ";
+		if (gatt_status == 0) {
+			strStatus += "Success";
+		}
+		else {
+			strStatus += "BluetoothGatt." + String.format("%d", gatt_status);
+		}
+		return strStatus;
+	}
+
 	private void handle(Message msg) {
 		Bundle bundle;
 		boolean found;
 		int reason;
 		String service_uuid = "";
 		String characteristic_uuid = "";
+		int status;
 		byte[] b = null;
+		int length;
+		String hex;
+		String uuid;
 
 		switch (msg.what) {
 			case BleAdapterService.MESSAGE:
 				bundle = msg.getData();
-				String text = bundle.getString(BleAdapterService.PARCEL_TEXT);
+				String text = bundle.getString(BleAdapterService.BundleText);
 				AddEvent(text);
 				break;
 
@@ -243,6 +296,78 @@ public class DeviceEventActivity01 extends Activity {
 				m_bleAdapter.discoverServices();
 				break;
 
+			case BleAdapterService.GATT_CHARACTERISTIC_READ:
+				AddEvent("CHR read.");
+				bundle = msg.getData();
+				uuid = bundle.getString(BundleUuid);
+				// These will be set:
+				// BundleHadAnError (boolean)
+				//    BundleLastError (optional, if HadAnError)
+				// BundleStatus (int) -- Zero == OK
+				// BundleUuid (String)
+				// BundleRawValueLength (int)
+				// BundleRawValue (byte[])
+				length = bundle.getInt(BleAdapterService.BundleRawValueLength);
+				b = bundle.getByteArray(BleAdapterService.BundleRawValue);
+				hex = DataToHex(b, length, "   ");
+				// Check that status == BluetoothGatt.GATT_SUCCESS (which is zero)
+				status = bundle.getInt(BleAdapterService.BundleStatus);
+				AddEvent(uuid + ": Status: " + statusToString(status) + ":\r\n" + hex);
+				break;
+
+			case BleAdapterService.GATT_CHARACTERISTIC_WRITTEN:
+				AddEvent("CHR Written");
+				bundle = msg.getData();
+				uuid = bundle.getString(BundleUuid);
+				length = bundle.getInt(BleAdapterService.BundleRawValueLength);
+				b = bundle.getByteArray(BleAdapterService.BundleRawValue);
+				hex = DataToHex(b, length, "   ");
+				status = bundle.getInt(BleAdapterService.BundleStatus);
+				AddEvent(uuid + ": Status: " + statusToString(status) + ":\r\n" + hex);
+				break;
+
+			case GATT_NOTIFICATION_OR_INDICATION_RECEIVED:
+				// This is Characteristic Changed event
+				AddEvent("CHR INDICATION/NOTIFICATON RECEIVED.");
+				// No 'status' is sent with this notification.
+				bundle = msg.getData();
+				uuid = bundle.getString(BundleUuid);
+				length = bundle.getInt(BleAdapterService.BundleRawValueLength);
+				b = bundle.getByteArray(BleAdapterService.BundleRawValue);
+				hex = DataToHex(b, length, "   ");
+				AddEvent(uuid + ": " + hex);
+				break;
+
+			case BleAdapterService.GATT_DESCRIPTOR_READ:
+				AddEvent("DESCRIPTOR READ, Current Value:");
+				bundle = msg.getData();
+				uuid = bundle.getString(BundleUuid);
+				characteristic_uuid = bundle.getString(BleAdapterService.BundleCharacteristicId);
+				length = bundle.getInt(BleAdapterService.BundleRawValueLength);
+				b = bundle.getByteArray(BleAdapterService.BundleRawValue);
+				hex = DataToHex(b, length, "      ");
+				status = bundle.getInt(BleAdapterService.BundleStatus);
+				AddEvent( "DSC READ: " + m_uuidlookup.GetNameWithShortUuid(uuid));
+				AddEvent( "   CHR: " + m_uuidlookup.GetNameWithShortUuid(characteristic_uuid));
+				AddEvent( "   Status: " + statusToString(status) + ":");
+				AddEvent(hex);
+				break;
+
+			case BleAdapterService.GATT_DESCRIPTOR_WRITTEN:
+				AddEvent("DESCRIPTOR Written, new value:");
+				bundle = msg.getData();
+				uuid = bundle.getString(BundleUuid);
+				characteristic_uuid = bundle.getString(BleAdapterService.BundleCharacteristicId);
+				length = bundle.getInt(BleAdapterService.BundleRawValueLength);
+				b = bundle.getByteArray(BleAdapterService.BundleRawValue);
+				hex = DataToHex(b, length, "   ");
+				status = bundle.getInt(BleAdapterService.BundleStatus);
+				AddEvent( "DSC WRITTEN: " + m_uuidlookup.GetNameWithShortUuid(uuid));
+				AddEvent( "   CHR: " + m_uuidlookup.GetNameWithShortUuid(characteristic_uuid));
+				AddEvent( "   Status: " + statusToString(status) + ":");
+				AddEvent(hex);
+				break;
+
 			case BleAdapterService.GATT_SERVICES_DISCOVERED:
 				found = false;
 				// m_deviceServices: List<String>
@@ -253,7 +378,7 @@ public class DeviceEventActivity01 extends Activity {
 				}
 				AddEvent("Device Services: (" + String.format("%d", m_deviceServices.size()));
 				for (String s : m_deviceServices) {
-					if (s.equals(m_uuidlookup.GlucoseServiceId)) {
+					if (s.equals(m_uuidlookup.SvcId_GlucoseService)) {
 						found = true;
 					}
 					String svc_name = m_uuidlookup.GetNameWithShortUuid(s);
@@ -269,30 +394,77 @@ public class DeviceEventActivity01 extends Activity {
 				// Once we have discovered device's services, we know each Service's
 				// characteristics and all caracteristic's descriptors; getting these
 				// lists is not async...
+				/*
+				07:39:43.976: SVC: Glucose Service (0x1808)
+				07:39:43.977: SVC: Soft Serial Service (0xfff0)
+				07:39:43.977: Getting Glucose Service characteristics...
+				07:39:43.979: CHR: Glucose Measurement (0x2a18)
+				07:39:43.980: CHR: Glucose Measurement Context (0x2a34)
+				07:39:43.981: CHR: Glucose Feature (0x2a51)
+				07:39:43.982: CHR: Record Access Control Point (0x2a53)
+
+				 */
 				AddEvent("Getting Glucose Service characteristics...");
-				if (!m_bleAdapter.GetServicesCharacteristics(m_uuidlookup.GlucoseServiceId,
+				if (!m_bleAdapter.GetServicesCharacteristics(m_uuidlookup.SvcId_GlucoseService,
 						m_serviceCharacteristics)) {
 					AddEvent("Could not get Glucose Service's characteristics.");
 					return;
 				}
 				// (else...)
+				// At this point, the BT stack "knows" all of the device's Services, and
+				// for each Service, all of that Service's Characteristics, and all of
+				// Characteristic's Descriptors.
+				// (Just a guess but $20 says the device sends up this stuff as an XmlDoc
+				//    very much like bluetooth.org documents.)
 				for (String s : m_serviceCharacteristics) {
 					String chr_name = m_uuidlookup.GetNameWithShortUuid(s);
 					AddEvent("CHR: " + chr_name);
 				}
+				// Get descriptors for all CHRs: 0x2a18, 2a34, 2a51, 2a53
+				for (String s : m_serviceCharacteristics) {
+					List<String> list = new ArrayList<>();
+					String chr_name = m_uuidlookup.GetNameWithShortUuid(s);
+					if (!m_bleAdapter.GetCharacteristicsDescriptors(m_uuidlookup.SvcId_GlucoseService, s, list)) {
+						AddEvent("Can't get Descriptors for: " + chr_name);
+					}
+					else {
+						AddEvent("DESCs of " + chr_name + ": Count = " + String.format("%d", list.size()));
+						for (String d : list){
+							String dsc = m_uuidlookup.GetNameWithShortUuid(d);
+							AddEvent("    " + dsc);
+						}
+					}
+				}
+				if (EnableGlucoseServiceCharacteristicNotifications()) {
+					AddEvent("=== Enable Glu Svc Notifications(): SUCCESS");
+				}
+				else {
+					AddEvent("=== !! Enable Glu Svc Notifications() FAILED: " + m_bleAdapter.LastError);
+					return;
+				}
+				AddEvent("Getting Client Config DSC...");
+				if (m_bleAdapter.ReadDescriptor(m_uuidlookup.SvcId_GlucoseService,
+						m_uuidlookup.ChrId_GlucoseMeasurement,
+						m_uuidlookup.DscId_ClientConfigurationConfig)) {
+					AddEvent("Submit SUCCESS");
+				}
+				else {
+					AddEvent("Submit: FAILED");
+				}
+
 				break;
 
 			case BleAdapterService.GATT_DISCONNECT:
-			bundle = msg.getData();
-			reason = bundle.getInt(BleAdapterService.PARCEL_STATUS, 0);
-//					((Button) PeripheralControlActivity.this
-//							.findViewById(R.id.connectButton)).setEnabled(true);
-			// we're disconnected
-			AddEvent("DISCONNECTED (" + String.format("%d", reason) + ")");
-//			if (back_requested) {
-//				PeripheralControlActivity.this.finish();
-//			}
-			break;
+				bundle = msg.getData();
+				reason = bundle.getInt(BleAdapterService.BundleStatus, 0);
+//				((Button) PeripheralControlActivity.this
+//						.findViewById(R.id.connectButton)).setEnabled(true);
+				// we're disconnected
+				AddEvent("DISCONNECTED (" + String.format("%d", reason) + ")");
+//  			if (back_requested) {
+//	    			PeripheralControlActivity.this.finish();
+//		    	}
+				break;
 		}
 	}
 /*
@@ -316,9 +488,9 @@ GATT Server (Device) has one or more Services:
 		@Override
 		public void onServiceConnected(ComponentName componentName, IBinder service) {
 			m_bleAdapter = ((BleAdapterService.LocalBinder) service).getService();
-			//m_bleAdapter.setActivityHandler(message_handler);
-
-            m_bleAdapter.setActivityHandler(m_msgHandler);
+			// Set ActivityHandler and UUIL lookup:
+			m_bleAdapter.SetHandlerAndUuidLookup(m_msgHandler, m_uuidlookup);
+            //   m_bleAdapter.setActivityHandler(m_msgHandler);
 		}
 		@Override
 		public void onServiceDisconnected(ComponentName componentName) {

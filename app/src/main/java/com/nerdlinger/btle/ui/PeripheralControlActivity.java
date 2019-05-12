@@ -1,8 +1,6 @@
 package com.nerdlinger.btle.ui;
 
 import android.app.Activity;
-import android.app.Activity;
-import android.bluetooth.BluetoothGattService;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -116,7 +114,8 @@ public class PeripheralControlActivity extends Activity {
 		@Override
 		public void onServiceConnected(ComponentName componentName, IBinder service) {
 			bluetooth_le_adapter = ((BleAdapterService.LocalBinder) service).getService();
-			bluetooth_le_adapter.setActivityHandler(message_handler);
+			//bluetooth_le_adapter.setActivityHandler(message_handler);
+			bluetooth_le_adapter.SetHandlerAndUuidLookup(message_handler, null);
 		}
 		@Override
 		public void onServiceDisconnected(ComponentName componentName) {
@@ -136,7 +135,7 @@ public class PeripheralControlActivity extends Activity {
 			switch (msg.what) {
 				case BleAdapterService.MESSAGE:
 					bundle = msg.getData();
-					String text = bundle.getString(BleAdapterService.PARCEL_TEXT);
+					String text = bundle.getString(BleAdapterService.BundleText);
 					showMsg(text);
 					break;
 
@@ -160,7 +159,7 @@ public class PeripheralControlActivity extends Activity {
 					break;
 				case BleAdapterService.GATT_DISCONNECT:
 					bundle = msg.getData();
-					int reason = bundle.getInt(BleAdapterService.PARCEL_STATUS, 0);
+					int reason = bundle.getInt(BleAdapterService.BundleStatus, 0);
 					((Button) PeripheralControlActivity.this
 							.findViewById(R.id.connectButton)).setEnabled(true);
 					// we're disconnected
