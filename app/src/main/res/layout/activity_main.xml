@@ -10,15 +10,15 @@
               android:orientation="vertical"
               tools:context=".ui.MainActivity" >
     <TextView
-        android:id="@+id/scanTitle"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:gravity="left"
         android:paddingLeft="10dip"
+        android:paddingRight="10dip"
         android:textSize="20dp"
         android:paddingBottom="10dp"
         android:textColor="@color/colorPrimaryDark"
-        android:text="Bluetooth LE Developer Study Guide" />
+        android:text="BtLeAndroid" />
     <Button
         android:id="@+id/scanButton"
         android:layout_width="fill_parent"
@@ -27,19 +27,25 @@
         android:enabled="true"
         android:onClick="onScan"
         android:text="" />
+    <Button
+        android:id="@+id/findConnectedDevices"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:enabled="true"
+        android:onClick="onFindConnectedDevices"
+        android:text="Find Connected Devices" />
+
     <android.support.v7.widget.RecyclerView
         android:id="@+id/scan_results_recycler_view"
         android:scrollbars="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         />
+
 <!--
-    <ListView
-        android:id="@+id/deviceList"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:paddingLeft="20dip"
-        android:layout_weight="1" />
+        android:divider="@drawable/list_divider2"
+        android:dividerHeight="2sp"
 -->
 
 </LinearLayout>

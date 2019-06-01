@@ -1,6 +1,7 @@
 package com.nerdlinger.btle.bluetooth;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -13,9 +14,11 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.nerdlinger.btle.Constants;
+import com.nerdlinger.btle.ui.ScanListView.OneBtDevice;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class BleScanner {
 	private BluetoothLeScanner scanner = null;
@@ -43,6 +46,19 @@ public class BleScanner {
 
 	private void log(String msg) {
 		Log.e(Constants.TAG, "BleScanner: " + msg);
+	}
+	public boolean GetConnectedDevices(List<OneBtDevice> devices) {
+		int i;
+		devices.clear();
+		i = 1;
+		Set<BluetoothDevice> pairedDevices = bluetooth_adapter.getBondedDevices();
+		for (BluetoothDevice d : pairedDevices) {
+			// new OneBtDevice(/* string name, string bd_addr));
+			OneBtDevice mydev = new OneBtDevice(i, d.getName(), d.getAddress());
+			devices.add(mydev);
+			i++;
+		}
+		return true;
 	}
 
 	// ScanResultsConsumer is an INTERFACE, implemented by MainActivity.

@@ -6,11 +6,13 @@ import android.bluetooth.BluetoothDevice;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
@@ -42,7 +44,6 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 	private RecyclerView.Adapter m_rvAdapter;
 	private RecyclerView.LayoutManager m_rvLayoutManager;
 	private Button m_scanButton;
-	private TextView m_scanTitle;
 	private BleScanner m_bleScanner;
 	private static final long SCAN_TIMEOUT = 30000;  // 5000;
 	private static final int REQUEST_LOCATION = 0;
@@ -63,7 +64,6 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 		setContentView(R.layout.activity_main);
 
 		m_scanButton = findViewById(R.id.scanButton);
-		m_scanTitle = findViewById(R.id.scanTitle);
 
 		m_rvScanResults = findViewById(R.id.scan_results_recycler_view);
 		// This setting improves performance. Content changes
@@ -72,16 +72,15 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 		// Use a linear layout manager:
 		m_rvLayoutManager = new LinearLayoutManager(this);
 		m_rvScanResults.setLayoutManager(m_rvLayoutManager);
-		m_rvScanResults.setItemAnimator(new DefaultItemAnimator());
+		//m_rvScanResults.setItemAnimator(new DefaultItemAnimator());  // Default *IS* already a DefaultItemAnimator!
 
 		// Specify an adapter:
 		m_rvAdapter = new ScanRecyclerViewAdapter(m_devices);
-
 		// Add a divider line between each Device:
-		// (This:
-		//   https://www.androidhive.info/2016/01/android-working-with-recycler-view/
-		// shows a fancier divider...)
-		m_rvScanResults.addItemDecoration(new DividerItemDecoration(this, LinearLayoutManager.VERTICAL));
+		Drawable row_divider = ContextCompat.getDrawable(this, R.drawable.recycler_view_divider);
+		RecyclerViewRowDivider rowDivider = new RecyclerViewRowDivider(row_divider);
+		m_rvScanResults.addItemDecoration(rowDivider);
+
 
 		m_rvScanResults.setAdapter(m_rvAdapter);
 
@@ -214,6 +213,16 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 
 	}
 
+
+	public void onFindConnectedDevices(View view) {
+		// TODO Test if already doing stuff, verify permissions.
+		mdeviceCount = 0;
+		m_devices.clear();
+
+		// Fill m_devices from the returned values.
+		m_bleScanner.GetConnectedDevices(m_devices);
+		m_rvAdapter.notifyDataSetChanged();
+	}
 
 	public void onScan(View view) {
 		if (m_bleScanner.isScanning()) {
@@ -355,7 +364,8 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 			// Later: Update RSSI?
 			return;
 		}
-		m_devices.add(new OneBtDevice(name, addr));
+		int i = m_devices.size() + 1;
+		m_devices.add(new OneBtDevice(i, name, addr));
 		m_rvAdapter.notifyDataSetChanged();
 
 	}

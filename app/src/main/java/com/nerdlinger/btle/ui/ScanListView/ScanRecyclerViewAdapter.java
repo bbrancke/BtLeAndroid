@@ -18,12 +18,14 @@ public class ScanRecyclerViewAdapter extends RecyclerView.Adapter<ScanRecyclerVi
 	public class MyViewHolder extends RecyclerView.ViewHolder {
 		public TextView name;
 		public TextView bd_addr;
+		public TextView m_id;
 
 		public MyViewHolder(View view)
 		{
 			super(view);
 			name = view.findViewById(R.id.text_view_one_device_row_name);
 			bd_addr = view.findViewById(R.id.text_view_one_device_row_bdaddr);
+			m_id = view.findViewById(R.id.tvId);
 		}
 	}
 
@@ -47,6 +49,7 @@ public class ScanRecyclerViewAdapter extends RecyclerView.Adapter<ScanRecyclerVi
 		OneBtDevice device = m_devices.get(position);
 		holder.name.setText(device.getDeviceName());
 		holder.bd_addr.setText(device.getDeviceBdAddr());
+		holder.m_id.setText(device.getId());
 	}
 
 	public void clear() {

@@ -271,6 +271,7 @@ public class DeviceEventActivity01 extends Activity {
 		int length;
 		String hex;
 		String uuid;
+		byte[] racpCommand;
 
 		switch (msg.what) {
 			case BleAdapterService.MESSAGE:
@@ -332,10 +333,12 @@ public class DeviceEventActivity01 extends Activity {
 				// No 'status' is sent with this notification.
 				bundle = msg.getData();
 				uuid = bundle.getString(BundleUuid);
+
 				length = bundle.getInt(BleAdapterService.BundleRawValueLength);
 				b = bundle.getByteArray(BleAdapterService.BundleRawValue);
 				hex = DataToHex(b, length, "   ");
-				AddEvent(uuid + ": " + hex);
+				AddEvent(m_uuidlookup.GetNameWithShortUuid(uuid));
+				AddEvent(hex);
 				break;
 
 			case BleAdapterService.GATT_DESCRIPTOR_READ:
@@ -351,6 +354,15 @@ public class DeviceEventActivity01 extends Activity {
 				AddEvent( "   CHR: " + m_uuidlookup.GetNameWithShortUuid(characteristic_uuid));
 				AddEvent( "   Status: " + statusToString(status) + ":");
 				AddEvent(hex);
+				AddEvent("SettingDescriptorNotifications: GlucoseMeasurement-ClientConfig");
+				if (m_bleAdapter.SetDescriptorNotifications(m_uuidlookup.SvcId_GlucoseService,
+						m_uuidlookup.ChrId_GlucoseMeasurement,
+						m_uuidlookup.DscId_ClientConfigurationConfig)) {
+					AddEvent("Submit SUCCESS");
+				}
+				else {
+					AddEvent("Submit: FAILED");
+				}
 				break;
 
 			case BleAdapterService.GATT_DESCRIPTOR_WRITTEN:
@@ -366,6 +378,35 @@ public class DeviceEventActivity01 extends Activity {
 				AddEvent( "   CHR: " + m_uuidlookup.GetNameWithShortUuid(characteristic_uuid));
 				AddEvent( "   Status: " + statusToString(status) + ":");
 				AddEvent(hex);
+				if (status == 0 && characteristic_uuid != null) {
+					if (characteristic_uuid.equalsIgnoreCase(m_uuidlookup.ChrId_GlucoseMeasurement)) {
+						AddEvent("SettingDescriptorNotifications: GlucoseMeasurementContext-ClientConfig");
+						if (m_bleAdapter.SetDescriptorNotifications(m_uuidlookup.SvcId_GlucoseService,
+								m_uuidlookup.ChrId_GlucoseMeasurementContext,
+								m_uuidlookup.DscId_ClientConfigurationConfig)) {
+							AddEvent("Submit SUCCESS");
+						}
+						else {
+							AddEvent("Submit: FAILED");
+						}
+					}
+					else {
+						// Send "Get All" coomand to RACP Characteristic...
+						racpCommand = new byte[2];
+						racpCommand[0] = 0x01;  // Resport Stored Records
+						racpCommand[1] = 0x01;  // All records
+						AddEvent("Enabling Report All Records --> RACP....");
+
+						if (m_bleAdapter.SendCharacteristicCommand(m_uuidlookup.SvcId_GlucoseService,
+								m_uuidlookup.ChrId_RecordAccessControlPoint,
+								racpCommand)) {
+							AddEvent("Submit SUCCESS");
+						}
+						else {
+							AddEvent("Submit FAILED: " + m_bleAdapter.LastError);
+						}
+					}
+				}
 				break;
 
 			case BleAdapterService.GATT_SERVICES_DISCOVERED:
@@ -510,7 +551,7 @@ GATT Server (Device) has one or more Services:
 	private static class MsgHandler extends Handler {
 	    private final WeakReference<DeviceEventActivity01> m_parent;
 	    public MsgHandler(DeviceEventActivity01 parent) {
-	        m_parent = new WeakReference<DeviceEventActivity01>(parent);
+	        m_parent = new WeakReference<>(parent);
         }
 
         @Override

@@ -362,6 +362,26 @@ public class BleAdapterService extends Service {
 		return true;
 	}
 
+	public boolean SendCharacteristicCommand(String svc_name, String chr_name,
+	                                         byte[] command) {
+		BluetoothGattCharacteristic chr;
+
+		LastError = "";
+
+		chr = GetCharacteristic(svc_name, chr_name);
+		if (chr == null) {
+			return false;
+		}
+		chr.setValue(command);
+		if (!bluetooth_gatt.writeCharacteristic(chr))
+		{
+			LastError = "SendCharacteristicCommand(): Submit FAILED";
+			return false;
+		}
+		// (else...)
+		return true;
+	}
+
 	public boolean SetDescriptorNotifications(String svc_name, String chr_name, String dsc_name) {
 		BluetoothGattDescriptor dsc;
 
