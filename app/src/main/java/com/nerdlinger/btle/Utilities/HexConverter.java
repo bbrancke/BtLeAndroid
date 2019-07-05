@@ -23,6 +23,13 @@ public class HexConverter {
 		int val = highOrder | lowOrder;
 		return val;
 	}
+
+	public int getSint16Le(final byte[] data, int index) {
+		int highorder = data[index + 1];
+		highorder <<= 8;
+		int val = highorder | getUint8(data, index);
+		return val;
+	}
 	// ==============================================
 	// Byte Array <--> String converters:
 	public byte[] HexStringToByteArray(String s) {
@@ -50,14 +57,27 @@ public class HexConverter {
 		}
 	}
 
-	public String ByteArrayToString(byte[] val) {
+	public String _byteArrayToString(byte[] val, String seperator) {
 		int i;
 		int theByte;
-		String s = "";
-		for (i = 0; i < val.length; i++) {
+		StringBuilder sb = new StringBuilder();
+
+		theByte = getUint8(val, 0);
+		sb.append(String.format("%02x", theByte));
+
+		for (i = 1; i < val.length; i++) {
+			sb.append(seperator);
 			theByte = getUint8(val, i);
-			s += String.format("%02x", theByte) + " ";
+			sb.append(String.format("%02x", theByte));
 		}
-		return s;
+		return sb.toString();
+	}
+
+	public String ByteArrayToString(byte[] val) {
+		return _byteArrayToString(val, " ");
+	}
+
+	public String ByteArrayToBdAddr(byte[] val) {
+		return _byteArrayToString(val, ":");
 	}
 }

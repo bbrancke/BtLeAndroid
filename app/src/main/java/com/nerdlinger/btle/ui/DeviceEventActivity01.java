@@ -414,7 +414,7 @@ public class DeviceEventActivity01 extends Activity {
 				// m_deviceServices: List<String>
 				AddEvent("Services discovered:");
 				if (!m_bleAdapter.GetDeviceServices(m_deviceServices)) {
-					AddEvent("Can't get Devices Services!");
+					AddEvent("Can't get DevicesContract Services!");
 					return;
 				}
 				AddEvent("Device Services: (" + String.format("%d", m_deviceServices.size()));
