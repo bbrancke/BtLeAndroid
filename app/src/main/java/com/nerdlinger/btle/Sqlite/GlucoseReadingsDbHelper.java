@@ -32,6 +32,7 @@ public class GlucoseReadingsDbHelper extends SQLiteOpenHelper {
 
     private static final String[] COLUMNS = {
             GlucoseReadingsContract.GlucoseReadingsBt._ID,
+            GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_DEVICE_ID,
             GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_RAW_DATA,
             GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_SEQUENCE_NUMBER,
             GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_READING_TAKEN_AT,
@@ -47,6 +48,7 @@ public class GlucoseReadingsDbHelper extends SQLiteOpenHelper {
     private static final String SQL_CREATE_ENTRIES =
             "CREATE TABLE " + GlucoseReadingsContract.GlucoseReadingsBt.TABLE_NAME + " (" +
                     GlucoseReadingsContract.GlucoseReadingsBt._ID + " INTEGER PRIMARY KEY," +
+                    GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_DEVICE_ID + " INTEGER," +
                     GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_RAW_DATA + " TEXT," +
                     GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_SEQUENCE_NUMBER + " INTEGER, " +
                     GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_READING_TAKEN_AT + " TEXT," +
@@ -74,6 +76,7 @@ public class GlucoseReadingsDbHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         // Create a new map of values, where column names are the keys
         ContentValues values = new ContentValues();
+        values.put(GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_DEVICE_ID, reading.GetDeviceId());
         values.put(GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_RAW_DATA, reading.GetRawDataString());
         values.put(GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_SEQUENCE_NUMBER, reading.GetSequenceNumber());
         values.put(GlucoseReadingsContract.GlucoseReadingsBt.COLUMN_NAME_READING_TAKEN_AT, reading.GetTimeStamp());

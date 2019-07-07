@@ -27,8 +27,8 @@ public class DevicesDbHelper extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
     // If you change the database schema, increment the database version.
-    public static final int DATABASE_VERSION = DbContract.DbInfo.DATABASE_VERSION;
-    public static final String DATABASE_NAME = DbContract.DbInfo.DATABASE_NAME;
+    private static final int DATABASE_VERSION = DbContract.DbInfo.DATABASE_VERSION;
+    private static final String DATABASE_NAME = DbContract.DbInfo.DATABASE_NAME;
     private static final String SQL_CREATE_ENTRIES =
             "CREATE TABLE " + DevicesContract.DevicesBt.TABLE_NAME + " (" +
                     DevicesContract.DevicesBt._ID + " INTEGER PRIMARY KEY," +
@@ -56,7 +56,8 @@ public class DevicesDbHelper extends SQLiteOpenHelper {
         onUpgrade(db, oldVersion, newVersion);
     }
 
-    public void InsertDevice(OneDevice device) {
+    public long InsertDevice(OneDevice device) {
+        long id;
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(DevicesContract.DevicesBt.COLUMN_NAME_DEVICE_NAME, device.GetName());
@@ -65,8 +66,9 @@ public class DevicesDbHelper extends SQLiteOpenHelper {
         values.put(DevicesContract.DevicesBt.COLUMN_NAME_TOTALREADINGS, device.GetTotalReadings());
         values.put(DevicesContract.DevicesBt.COLUMN_NAME_LASTSEEN, device.GetLastSeen());
         values.put(DevicesContract.DevicesBt.COLUMN_NAME_LASTREADINGS, device.GetLastSeenCount());
-        db.insert(DevicesContract.DevicesBt.TABLE_NAME, null, values);
+        id = db.insert(DevicesContract.DevicesBt.TABLE_NAME, null, values);
         db.close();
+        return id;
     }
 
     public List<OneDevice> GetBtDevices() {
@@ -95,6 +97,7 @@ public class DevicesDbHelper extends SQLiteOpenHelper {
             } while (cursor.moveToNext());
         }
 
+        cursor.close();
         db.close();
         return devices;
     }
