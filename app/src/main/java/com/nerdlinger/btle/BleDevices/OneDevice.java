@@ -8,6 +8,9 @@ public class OneDevice {
     /*
       public static final String COLUMN_NAME_DEVICE_NAME = "Name";
         public static final String COLUMN_NAME_DEVICE_BDADDR = "Bdaddr";
+       	public static final String COLUMN_NAME_DISPLAY_NAME = "DisplayName";
+        public static final String COLUMN_NAME_DEVICE_TYPE = "Type";
+        public static final String COLUMN_NAME_ISACTIVE = "IsActive";
         public static final String COLUMN_NAME_DISCOVERED = "Discovered";
         public static final String COLUMN_NAME_TOTALREADINGS = "TotalReadings";
         public static final String COLUMN_NAME_LASTSEEN = "LastSeen";
@@ -22,6 +25,15 @@ public class OneDevice {
     private String m_bdaddr;
     public String GetBdaddr() { return m_bdaddr; }
 
+    private String m_displayName;
+    public String GetDisplayName() { return m_displayName; }
+
+    private int m_deviceType;
+    public int GetDeviceType() { return m_deviceType; }
+
+    private boolean m_isActive;
+    public boolean GetIsActive() { return m_isActive; }
+
     private String m_discoveredOn;
     public String GetDiscoveredOn() { return m_discoveredOn; }
 
@@ -35,10 +47,15 @@ public class OneDevice {
     public int GetLastSeenCount() { return m_lastSeenCount; }
 
     // Reading devices from SQL:
-    public OneDevice(int id, String name, String bdaddr, String discoveredOn, int totalReadings, String lastSeen, int lastSeenCount) {
+    public OneDevice(int id, String name, String bdaddr, String displayName,
+                     int deviceType, boolean isActive,
+                     String discoveredOn, int totalReadings, String lastSeen, int lastSeenCount) {
         m_id = id;  // SQL Row Id
         m_name = name;
         m_bdaddr = bdaddr;
+        m_displayName = displayName;
+        m_deviceType = deviceType;
+        m_isActive = isActive;
         m_discoveredOn = discoveredOn;
         m_totalReadings = totalReadings;
         m_lastSeen = lastSeen;
@@ -71,7 +88,7 @@ public class OneDevice {
         int sec = 00;
 
         dt = LocalDateTime.of(year, month, day, hour, minute, sec);
-        dt = LocalDateTime.parse("2019-07-06T07:05:04Z");
+        dt = LocalDateTime.parse("2019-07-06T07:05:04");  // *NO* 'Z' at the end!
     }
 
 }
