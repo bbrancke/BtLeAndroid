@@ -13,6 +13,7 @@ public class OneDevice {
         public static final String COLUMN_NAME_LASTSEEN = "LastSeen";
         public static final String COLUMN_NAME_LASTREADINGS = "LastReadingsCount";
      */
+    
     private int m_id;
     public int GetId() { return m_id; }
 
