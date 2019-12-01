@@ -5,7 +5,15 @@ import com.nerdlinger.btle.Utilities.HexConverter;
 import java.time.LocalDateTime;
 
 public class OneReading {
-	private HexConverter m_hexconverter;  // String <--> Byte[] array
+	private HexConverter m_hexconverter = new HexConverter();  // String <--> Byte[] array
+
+	private long m_deviceId;
+	public long GetDeviceId() {
+		return m_deviceId;
+	}
+	public void SetDeviceId(long device_id) {
+		m_deviceId = device_id;
+	}
 
 	private byte[] m_rawDataBytes = null;
 	private String m_rawDataString = "";
@@ -61,7 +69,8 @@ public class OneReading {
 	private boolean m_sensorStatusAnnunciationPresent;
 	private boolean m_contextInformationFollows;
 
-	private void SetRawData(byte[] data) {
+	public void SetRawData(long device_id, byte[] data) {
+		m_deviceId = device_id;
 		// Make a new copy of the RX buffer, which
 		// will be over-written on next RX...
 		m_rawDataBytes = data.clone();

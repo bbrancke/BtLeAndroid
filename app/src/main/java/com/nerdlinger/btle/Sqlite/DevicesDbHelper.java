@@ -14,33 +14,37 @@ import java.util.List;
 
 public class DevicesDbHelper extends SQLiteOpenHelper {
     private static final String[] COLUMNS = {
-            DevicesContract.DevicesBt._ID,
-            DevicesContract.DevicesBt.COLUMN_NAME_DEVICE_NAME,
-            DevicesContract.DevicesBt.COLUMN_NAME_DEVICE_BDADDR,
-            DevicesContract.DevicesBt.COLUMN_NAME_DISCOVERED,
-            DevicesContract.DevicesBt.COLUMN_NAME_TOTALREADINGS,
-            DevicesContract.DevicesBt.COLUMN_NAME_LASTSEEN,
-            DevicesContract.DevicesBt.COLUMN_NAME_LASTREADINGS
+            DbContract.DevicesBt._ID,
+            DbContract.DevicesBt.COLUMN_NAME_DEVICE_NAME,
+            DbContract.DevicesBt.COLUMN_NAME_DEVICE_BDADDR,
+            DbContract.DevicesBt.COLUMN_NAME_DISPLAY_NAME,
+            DbContract.DevicesBt.COLUMN_NAME_DEVICE_TYPE,
+            DbContract.DevicesBt.COLUMN_NAME_ISACTIVE,
+            DbContract.DevicesBt.COLUMN_NAME_DISCOVERED,
+            DbContract.DevicesBt.COLUMN_NAME_TOTALREADINGS,
+            DbContract.DevicesBt.COLUMN_NAME_LASTSEEN,
+            DbContract.DevicesBt.COLUMN_NAME_LASTREADINGS
     };
 
     public DevicesDbHelper(Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        super(context, DbContract.DbInfo.DATABASE_FILENAME,null, DbContract.DbInfo.DATABASE_VERSION);
     }
-    // If you change the database schema, increment the database version.
-    public static final int DATABASE_VERSION = DbContract.DbInfo.DATABASE_VERSION;
-    public static final String DATABASE_NAME = DbContract.DbInfo.DATABASE_NAME;
+
     private static final String SQL_CREATE_ENTRIES =
-            "CREATE TABLE " + DevicesContract.DevicesBt.TABLE_NAME + " (" +
-                    DevicesContract.DevicesBt._ID + " INTEGER PRIMARY KEY," +
-                    DevicesContract.DevicesBt.COLUMN_NAME_DEVICE_NAME + " TEXT," +
-                    DevicesContract.DevicesBt.COLUMN_NAME_DEVICE_BDADDR + " TEXT, " +
-                    DevicesContract.DevicesBt.COLUMN_NAME_DISCOVERED + " TEXT," +
-                    DevicesContract.DevicesBt.COLUMN_NAME_TOTALREADINGS + " INTEGER," +
-                    DevicesContract.DevicesBt.COLUMN_NAME_LASTSEEN + " TEXT," +
-                    DevicesContract.DevicesBt.COLUMN_NAME_LASTREADINGS + " INTEGER)";
+            "CREATE TABLE " + DbContract.DevicesBt.TABLE_NAME + " (" +
+                    DbContract.DevicesBt._ID + " INTEGER PRIMARY KEY," +
+                    DbContract.DevicesBt.COLUMN_NAME_DEVICE_NAME + " TEXT," +
+                    DbContract.DevicesBt.COLUMN_NAME_DEVICE_BDADDR + " TEXT, " +
+                    DbContract.DevicesBt.COLUMN_NAME_DISPLAY_NAME + " TEXT, " +
+                    DbContract.DevicesBt.COLUMN_NAME_DEVICE_TYPE + " INTEGER, " +
+                    DbContract.DevicesBt.COLUMN_NAME_ISACTIVE + " INTEGER, " +
+                    DbContract.DevicesBt.COLUMN_NAME_DISCOVERED + " TEXT," +
+                    DbContract.DevicesBt.COLUMN_NAME_TOTALREADINGS + " INTEGER," +
+                    DbContract.DevicesBt.COLUMN_NAME_LASTSEEN + " TEXT," +
+                    DbContract.DevicesBt.COLUMN_NAME_LASTREADINGS + " INTEGER);";
 
     private static final String SQL_DELETE_TABLE =
-            "DROP TABLE IF EXISTS " + DevicesContract.DevicesBt.TABLE_NAME;
+            "DROP TABLE IF EXISTS " + DbContract.DevicesBt.TABLE_NAME + ";";
 
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(SQL_CREATE_ENTRIES);
@@ -56,23 +60,28 @@ public class DevicesDbHelper extends SQLiteOpenHelper {
         onUpgrade(db, oldVersion, newVersion);
     }
 
-    public void InsertDevice(OneDevice device) {
+    public long InsertDevice(OneDevice device) {
+        long id;
         SQLiteDatabase db = getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(DevicesContract.DevicesBt.COLUMN_NAME_DEVICE_NAME, device.GetName());
-        values.put(DevicesContract.DevicesBt.COLUMN_NAME_DEVICE_BDADDR, device.GetBdaddr());
-        values.put(DevicesContract.DevicesBt.COLUMN_NAME_DISCOVERED, device.GetDiscoveredOn());
-        values.put(DevicesContract.DevicesBt.COLUMN_NAME_TOTALREADINGS, device.GetTotalReadings());
-        values.put(DevicesContract.DevicesBt.COLUMN_NAME_LASTSEEN, device.GetLastSeen());
-        values.put(DevicesContract.DevicesBt.COLUMN_NAME_LASTREADINGS, device.GetLastSeenCount());
-        db.insert(DevicesContract.DevicesBt.TABLE_NAME, null, values);
+        values.put(DbContract.DevicesBt.COLUMN_NAME_DEVICE_NAME, device.GetName());
+        values.put(DbContract.DevicesBt.COLUMN_NAME_DEVICE_BDADDR, device.GetBdaddr());
+        values.put(DbContract.DevicesBt.COLUMN_NAME_DISPLAY_NAME, device.GetDisplayName());
+        values.put(DbContract.DevicesBt.COLUMN_NAME_DEVICE_TYPE, device.GetDeviceType());
+        values.put(DbContract.DevicesBt.COLUMN_NAME_ISACTIVE, device.GetIsActive() ? 1 : 0);
+        values.put(DbContract.DevicesBt.COLUMN_NAME_DISCOVERED, device.GetDiscoveredOn());
+        values.put(DbContract.DevicesBt.COLUMN_NAME_TOTALREADINGS, device.GetTotalReadings());
+        values.put(DbContract.DevicesBt.COLUMN_NAME_LASTSEEN, device.GetLastSeen());
+        values.put(DbContract.DevicesBt.COLUMN_NAME_LASTREADINGS, device.GetLastSeenCount());
+        id = db.insert(DbContract.DevicesBt.TABLE_NAME, null, values);
         db.close();
+        return id;
     }
 
     public List<OneDevice> GetBtDevices() {
         List<OneDevice> devices = new LinkedList<>();
         SQLiteDatabase db = getWritableDatabase();
-        Cursor cursor = db.query(DevicesContract.DevicesBt.TABLE_NAME,
+        Cursor cursor = db.query(DbContract.DevicesBt.TABLE_NAME,
             COLUMNS,
             null,
             null,
@@ -83,18 +92,28 @@ public class DevicesDbHelper extends SQLiteOpenHelper {
 
         if (cursor.moveToFirst()) {
             do {
+                /*
+                OneDevice(int id, String name, String bdaddr, String displayName,
+                     int deviceType, boolean isActive,
+                     String discoveredOn, int totalReadings, String lastSeen, int lastSeenCount)
+                */
+                int active = Integer.parseInt(cursor.getString(5));
                 OneDevice dev = new OneDevice(
                         Integer.parseInt(cursor.getString(0)),  // Id
                         cursor.getString(1),  // Name
                         cursor.getString(2),  // BDADDR
-                        cursor.getString(3),  // Discovered On
-                        Integer.parseInt(cursor.getString(4)),  // Total Readings
-                        cursor.getString(5),  // Last Seen
-                        Integer.parseInt(cursor.getString(6)));  // Last Seen Count
+                        cursor.getString(3),  // DisplayName
+                        Integer.parseInt(cursor.getString(4)),  // deviceType (int)
+                        (active == 1),  // IsActive (bool)
+                        cursor.getString(6),  // Discovered On
+                        Integer.parseInt(cursor.getString(7)),  // Total Readings
+                        cursor.getString(8),  // Last Seen
+                        Integer.parseInt(cursor.getString(9)));  // Last Seen Count
                 devices.add(dev);
             } while (cursor.moveToNext());
         }
 
+        cursor.close();
         db.close();
         return devices;
     }

@@ -27,6 +27,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.nerdlinger.btle.Constants;
+import com.nerdlinger.btle.GlucoseReading.OneReading;
 import com.nerdlinger.btle.R;
 import com.nerdlinger.btle.bluetooth.BleScanner;
 import com.nerdlinger.btle.bluetooth.ScanResultsConsumer;
@@ -34,6 +35,7 @@ import com.nerdlinger.btle.ui.ScanListView.DeviceTouchListener;
 import com.nerdlinger.btle.ui.ScanListView.OneBtDevice;
 import com.nerdlinger.btle.ui.ScanListView.ScanRecyclerViewAdapter;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,6 +64,35 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+
+
+		// 07:09:40.481: CHR INDICATION/NOTIFICATON RECEIVED.
+		//07:09:40.485: 00002a18-0000-1000-8000-00805f9b34fb:    Data Received, length = 17
+		//0000  0b 07 00 e2  07 03 08 04
+		//0008  18 39 3c 00  76 b0 11 00
+		//0010  00
+
+		byte[] data = new byte[17];
+		data[0] = 0x0b; data[1] = 0x07; data[2] = 0x00;
+		//data[3] = 0xe2 & 0xff;
+		data[3] = 0x72; data[3] += 0x70;
+		data[4] = 0x07; data[5] = 0x03;
+		data[6] = 0x08; data[7] = 0x04;
+		data[8] = 0x18; data[9] = 0x39; data[10] = 0x3c; data[11] = 0x00;
+		data[12] = 0x76; data[13] = (byte)0xb0; data[14] = 0x11; data[15] = 0x00;
+		data[16] = 0x00;
+
+		OneReading reading = new OneReading();
+		reading.SetRawData(1, data);
+		reading.Parse();
+		int n = reading.GetSequenceNumber();
+		int m = reading.GetMeasurement();
+		String when = reading.GetTimeStamp();
+		String s = "[" + when + "]: " + String.format("%d", m);
+
+		Log.e("BRAD", s);
+
+
 
 		m_scanButton = findViewById(R.id.scanButton);
 
