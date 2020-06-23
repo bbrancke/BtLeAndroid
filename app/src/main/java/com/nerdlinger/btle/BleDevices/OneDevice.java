@@ -16,8 +16,12 @@ public class OneDevice {
         public static final String COLUMN_NAME_LASTSEEN = "LastSeen";
         public static final String COLUMN_NAME_LASTREADINGS = "LastReadingsCount";
      */
-    private int m_id;  // SQL Row Id
-    public int GetId() { return m_id; }
+    
+
+    private long m_id;  // SQL Row Id
+
+    public long GetId() { return m_id; }
+	public void SetId(long id) { m_id = id; }
 
     private String m_name;
     public String GetName() { return m_name; }
@@ -47,7 +51,7 @@ public class OneDevice {
     public int GetLastSeenCount() { return m_lastSeenCount; }
 
     // Reading devices from SQL:
-    public OneDevice(int id, String name, String bdaddr, String displayName,
+    public OneDevice(long id, String name, String bdaddr, String displayName,
                      int deviceType, boolean isActive,
                      String discoveredOn, int totalReadings, String lastSeen, int lastSeenCount) {
         m_id = id;  // SQL Row Id

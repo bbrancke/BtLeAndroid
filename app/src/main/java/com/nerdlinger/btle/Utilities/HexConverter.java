@@ -52,7 +52,7 @@ public class HexConverter {
 			return data;
 		}
 		catch (Exception ex) {
-			Log.e("OneReading", "Parse [" + s + "' failed on ["  + oneByte +"]: " + ex.getMessage());
+			Log.e("OneReading", "Parse [" + s + "] failed around ["  + oneByte +"]: " + ex.getMessage());
 			return null;
 		}
 	}
