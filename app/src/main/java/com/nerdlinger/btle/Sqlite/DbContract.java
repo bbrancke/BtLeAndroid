@@ -26,7 +26,7 @@ public final class DbContract {
         public static final String COLUMN_NAME_LASTREADINGS = "LastReadingsCount";
     }
 
-// Glucose Readings table contents:
+// Glucose Readings table columns:
     public static class GlucoseReadingsBt implements BaseColumns {
         public static final String TABLE_NAME = "glucose_readings";
         // OLD TABLE:

@@ -159,6 +159,22 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 		setScanState(false);
 	}
 
+	/******************************************
+	 * AndroidManifest:
+	 * manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	 *           package="com.nerdlinger.btle">
+	 *
+	 *     <uses-permission android:name="android.permission.BLUETOOTH" />
+	 *     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+	 *     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+	 *
+	 *     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+	 *
+	 *     <application   .....
+	 ******************************************/
+
+
+
 	private boolean VerifyStoragePermissions() {
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
 			m_permissionsStorageGranted = true;
@@ -371,7 +387,7 @@ public class MainActivity extends AppCompatActivity implements ScanResultsConsum
 	// ==============================================================
 	// candidateBleDevice(), scanningStarted(), scanTimeRemaining()
 	// and scanningStopped() are here b/cos I implement the
-	// "ScanResultsCinsumer" *INTERFACE*,
+	// "ScanResultsConsumer" *INTERFACE*,
 	// and are called by 'BleScanner' when it has something interesting
 	// to show. THESE ARE CALLED ON THE BleScanner THREAD
 	// (it is NOT a service).

@@ -115,7 +115,12 @@ public class BleAdapterService extends Service {
 
 	// Clear the saved Services etc for this device:
 	private boolean refreshDeviceCache() {
+
 		try {
+			// Can throw a "NoSuchMethod" exception if refresh()
+			//   is on a "Blacklist" (Android 10+).
+			// This simply clears local cached data and forces
+			//   a refresh from the device.
 			BluetoothGatt localGatt = bluetooth_gatt;
 			Method localMethod = localGatt.getClass().getMethod("refresh", new Class[0]);
 			if (localMethod == null) {
@@ -136,11 +141,27 @@ public class BleAdapterService extends Service {
 			sendConsoleMessage("connect() failed: bt adaptor or address is null");
 			return false;
 		}
+
+		// BluetoothDevice: Represents a remote Bluetooth device.
+		// A BluetoothDevice lets you create a connection with the
+		// respective device or query information about it,
+		// such as the name, address, class, and bonding state.
+		// This class is really just a thin wrapper for a Bluetooth hardware address.
 		device = bluetooth_adapter.getRemoteDevice(address);
 		if (device == null) {
 			sendConsoleMessage("Connect() failed: device=null. Off or out of range?");
 			return false;
 		}
+
+		// BluetoothGatt:  enable communication with Bluetooth Smart or
+		// Smart Ready devices.
+		// To connect to a remote peripheral device, create a
+		// BluetoothGattCallback and call BluetoothDevice.connectGatt()
+		// to get a instance of this class.
+		// BluetoothGattCallback, below, implements:
+		//    onServicesDiscovered(), onConnectionStateChange(),
+		//    onCharacteristicRead(), ...Write(), ...Changed(),
+		//    onDescriptorRead(), onDescriptorWrite() amongst others.
 		bluetooth_gatt = device.connectGatt(this, false, gatt_callback);
 		refreshDeviceCache();
 

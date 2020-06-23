@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
@@ -19,6 +20,21 @@ import com.nerdlinger.btle.ui.ScanListView.OneBtDevice;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+
+// This class is NOT as complicated as it looks.
+//   1. has an exciting "time is up" counter
+//   2. Starts / Stops a BluetoothLeScanner
+//   3. BluetoothLeScanner fires "ScanCallback";
+//      this passes it to a method in MainActivity.
+//      [this is Async I think]
+// Why doesn't this just pass the ScanCallback result to MainActivity?
+// We can get the Service UUIDs from that, but this does NOT
+// allow doing that.
+
+// I think: Use this as part of a Singleton data repository
+//   not sure what happens if you rotate the screen here,
+//   this whole thing get destroyed / recreated?
 
 public class BleScanner {
 	private BluetoothLeScanner scanner = null;
@@ -142,11 +158,19 @@ Here I want to see everything for now...
 	}
 
 	// ============================================================
+	// result: A Bluetooth LE scan result (type:ScanResult).
 	private ScanCallback scan_callback = new ScanCallback() {
 		public void onScanResult(int callbackType, final ScanResult result) {
 			if (!scanning) {
 				return;
 			}
+			// result.getScanRecord() returns a ScanRecord
+			//   ScanRecord sr = result.getScanRecord();
+			//   sr.getServiceUuids(); //- List<parcelUuid>, many others
+			//
+			// BluetoothDevice dev = result.getDevice();  // BluetoothDevice
+			//  dev.connectGatt()  // connect to service
+
 			scan_results_consumer.candidateBleDevice(result.getDevice(), result.getScanRecord().getBytes(), result.getRssi());
 		}
 	};
